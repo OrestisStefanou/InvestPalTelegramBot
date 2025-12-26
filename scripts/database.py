@@ -1,13 +1,14 @@
 from datetime import datetime
 
 from database import (
-    TelegramUser,
+    TelegramUserDbModel,
     SqliteDB,
 )
 
 def add_new_telegram_user(
         telegram_user_id: str,
         agent_service_user_id: str,
+        user_first_name: str,
         onboarded_successfully: bool = True,
         created_at: str | None = None,
         updated_at: str | None = None,
@@ -18,9 +19,10 @@ def add_new_telegram_user(
     if updated_at is None:
         updated_at = datetime.now().isoformat()
 
-    telegram_user = TelegramUser(
+    telegram_user = TelegramUserDbModel(
         telegram_user_id=telegram_user_id,
         agent_service_user_id=agent_service_user_id,
+        user_first_name=user_first_name,
         onboarded_successfully=onboarded_successfully,
         created_at=created_at,
         updated_at=updated_at,

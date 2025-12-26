@@ -10,21 +10,22 @@ from telegram.ext import (
 )
 
 from config import settings
-from bot_service import BotService
+from bot_service import BotService, TelegramUser
+from database import SqliteDB
 from logger import logger
 
 async def handle_start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Send a message when the command /start is issued."""
     logger.info(f"User {update.effective_user.id} ({update.effective_user.username}) sent /start")
-    bot_service = BotService()
-    
-    telegram_user_id = str(update.effective_user.id)
-    user_first_name = update.effective_user.first_name
-    await bot_service.handle_new_user(telegram_user_id, user_first_name)
+    database = SqliteDB()
+    bot_service = BotService(database)
+
+    telegram_user = TelegramUser(str(update.effective_user.id), update.effective_user.username)
+    await bot_service.handle_new_user(telegram_user)
 
     bot_response_msgs = await bot_service.generate_bot_response(
-        telegram_user_id=telegram_user_id,
-        message=f"Hey, I am your new client {user_first_name}!"
+        telegram_user=telegram_user,
+        message=f"Hey, I am your new client {telegram_user.first_name}!",
     )
     for msg in bot_response_msgs:
         await update.message.reply_text(msg, parse_mode="HTML")
@@ -35,13 +36,17 @@ async def handle_incoming_message(update: Update, context: ContextTypes.DEFAULT_
     user = update.effective_user
     telegram_user_id = str(user.id)
     message_text = update.message.text
-    
+
     # Log the message and user info
     logger.info(f"User {user.id} (@{user.username}) sent: {message_text}")
 
-    bot_service = BotService()
+    database = SqliteDB()
+    bot_service = BotService(database)
+
+    telegram_user = TelegramUser(str(update.effective_user.id), update.effective_user.username)
+
     bot_response_msgs = await bot_service.generate_bot_response(
-        telegram_user_id=telegram_user_id,
+        telegram_user=telegram_user,
         message=message_text,
     )
     for msg in bot_response_msgs:
@@ -52,6 +57,7 @@ async def handle_incoming_message(update: Update, context: ContextTypes.DEFAULT_
 async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Log errors caused by updates."""
     logger.error(f"Update {update} caused error {context.error}")
+
 
 def main():
     application = Application.builder().token(settings.TELEGRAM_BOT_TOKEN).build()
