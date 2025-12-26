@@ -1,10 +1,15 @@
 import datetime as dt
 from dataclasses import dataclass
 
+from telegram import Bot
+from telegram.error import TelegramError
+
 from agent_service_client import AgentServiceClient
 from database import Database, TelegramUserDbModel
 import utils
 from logger import logger
+from config import settings
+
 
 @dataclass
 class TelegramUser:
@@ -94,6 +99,15 @@ class BotService():
             )
         except Exception as e:
             logger.error(f"Failed to create session: {e}")
+            raise e
+
+    async def send_adhoc_message(self, telegram_user_id: str, message: str):
+        try:
+            bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
+            await bot.send_message(chat_id=telegram_user_id, text=message)
+            logger.info(f"Message sent successfully to user {telegram_user_id}")
+        except TelegramError as e:
+            logger.error(f"Failed to send message to user {telegram_user_id}: {e}")
             raise e
 
     def _store_user_in_database(self, telegram_user: TelegramUser, onboarded_successfully: bool):
