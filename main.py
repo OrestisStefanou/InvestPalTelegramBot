@@ -20,7 +20,7 @@ async def handle_start_command(update: Update, context: ContextTypes.DEFAULT_TYP
     database = SqliteDB()
     bot_service = BotService(database)
 
-    telegram_user = TelegramUser(str(update.effective_user.id), update.effective_user.username)
+    telegram_user = TelegramUser(str(update.effective_user.id), update.effective_user.first_name)
     await bot_service.handle_new_user(telegram_user)
 
     bot_response_msgs = await bot_service.generate_bot_response(
@@ -43,7 +43,7 @@ async def handle_incoming_message(update: Update, context: ContextTypes.DEFAULT_
     database = SqliteDB()
     bot_service = BotService(database)
 
-    telegram_user = TelegramUser(str(update.effective_user.id), update.effective_user.username)
+    telegram_user = TelegramUser(str(update.effective_user.id), update.effective_user.first_name)
 
     bot_response_msgs = await bot_service.generate_bot_response(
         telegram_user=telegram_user,
