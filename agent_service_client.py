@@ -58,7 +58,7 @@ class AgentServiceClient:
                         "session_id": session_id,
                         "message": message,
                     },
-                    timeout=120,    # 2 minutes since this can take long
+                    timeout=settings.AGENT_SERVICE_TIMEOUT_MINUTES * 60,
                 )
             except httpx.RequestError as e:
                 raise Exception(f"Failed to generate AI response: {e}")

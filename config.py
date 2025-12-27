@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     TELEGRAM_WEBHOOK_PORT: int
 
     AGENT_SERVICE_URL: str
+    AGENT_SERVICE_TIMEOUT_MINUTES: int = 5
 
     SQLITE_DB_FILE_PATH: str = "telegram_bot_db.sqlite"
     SQLITE_DB_TIMEOUT_SECONDS: int = 10
