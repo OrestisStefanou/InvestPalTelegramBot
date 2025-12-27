@@ -6,7 +6,7 @@ A Telegram bot that acts as a personal investor assistant, powered by an underly
 
 - **Personalized Investment Assistance**: Interacts with users to provide investment-related information and advice.
 - **Session Management**: Maintains user context and sessions across interactions.
-- **AI Integration**: Leverages a separate agent service for generating intelligent responses.
+- **AI Integration**: Leverages the [InvestPal Agent Service](https://github.com/OrestisStefanou/InvestPal) for generating intelligent responses.
 - **Message Formatting**: Automatically transforms AI-generated markdown into Telegram-compatible HTML.
 - **Asynchronous & Robust**: Built using `python-telegram-bot` with a focus on reliability and performance.
 
@@ -14,7 +14,7 @@ A Telegram bot that acts as a personal investor assistant, powered by an underly
 
 - Python >= 3.14
 - [uv](https://github.com/astral-sh/uv) (recommended for package management)
-- Access to a running instance of the `agent_service`.
+- Access to a running instance of the [InvestPal Agent Service](https://github.com/OrestisStefanou/InvestPal).
 
 ## Setup
 
@@ -47,6 +47,11 @@ uv run main.py
 ```
 
 The bot starts in webhook mode. Ensure your `TELEGRAM_WEBHOOK_URL` is accessible by Telegram's servers (e.g., via `ngrok` for local development).
+
+## Architecture
+
+This project is part of the **InvestPal** ecosystem. It serves as the frontend (Telegram interface) while the core logic and AI reasoning are handled by the [InvestPal Agent Service](https://github.com/OrestisStefanou/InvestPal).
+
 
 ## Project Structure
 
