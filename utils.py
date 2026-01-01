@@ -75,3 +75,13 @@ def markdown_to_telegram_html(text):
     text = re.sub(r'\*(.+?)\*', r'<i>\1</i>', text)
 
     return text
+
+
+def get_instructions_message() -> str:
+    return """
+Welcome to <b>InvestPal</b>! 🚀
+
+You will receive shortly a welcoming message from your <b>AI investment advisor/assistant</b>.
+
+For the optimal experience, please <b>send one message at a time</b>. This helps to process your requests more accurately.
+    """
