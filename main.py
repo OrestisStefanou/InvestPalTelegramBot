@@ -13,10 +13,14 @@ from config import settings
 from bot_service import BotService, TelegramUser
 from database import SqliteDB
 from logger import logger
+from utils import get_instructions_message
 
 async def handle_start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Send a message when the command /start is issued."""
     logger.info(f"User {update.effective_user.id} ({update.effective_user.username}) sent /start")
+
+    instructions_msg = get_instructions_message()
+    await update.message.reply_text(instructions_msg, parse_mode="HTML")
+
     database = SqliteDB()
     bot_service = BotService(database)
 
