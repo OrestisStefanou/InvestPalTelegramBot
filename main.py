@@ -15,8 +15,13 @@ from database import SqliteDB
 from logger import logger
 from utils import get_instructions_message
 
+
 async def handle_start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.info(f"User {update.effective_user.id} ({update.effective_user.username}) sent /start")
+
+    if str(update.effective_user.id) != settings.TELEGRAM_USER_ID:
+        await update.message.reply_text("Unauthorized")
+        return
 
     instructions_msg = get_instructions_message()
     await update.message.reply_text(instructions_msg, parse_mode="HTML")
@@ -24,13 +29,24 @@ async def handle_start_command(update: Update, context: ContextTypes.DEFAULT_TYP
     database = SqliteDB()
     bot_service = BotService(database)
 
-    telegram_user = TelegramUser(str(update.effective_user.id), update.effective_user.first_name)
+    user_id = str(update.effective_user.id)
+    if settings.INVESTPAL_USER_ID:
+        user_id = settings.INVESTPAL_USER_ID
+
+    telegram_user = TelegramUser(user_id, update.effective_user.first_name)
     await bot_service.handle_new_user(telegram_user)
 
-    bot_response_msgs = await bot_service.generate_bot_response(
-        telegram_user=telegram_user,
-        message=f"Hey, I am your new client {telegram_user.first_name}!",
-    )
+    if not settings.INVESTPAL_USER_ID:
+        bot_response_msgs = await bot_service.generate_bot_response(
+            telegram_user=telegram_user,
+            message=f"Hey, I am your new client {telegram_user.first_name}!",
+        )
+    else:
+        bot_response_msgs = await bot_service.generate_bot_response(
+            telegram_user=telegram_user,
+            message=f"Hey, this is our new communication channel through telegram!",
+        )
+        
     for msg in bot_response_msgs:
         await update.message.reply_text(msg, parse_mode="HTML")
         time.sleep(1)
@@ -38,16 +54,23 @@ async def handle_start_command(update: Update, context: ContextTypes.DEFAULT_TYP
 
 async def handle_incoming_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    telegram_user_id = str(user.id)
     message_text = update.message.text
 
     # Log the message and user info
     logger.info(f"User {user.id} (@{user.username}) sent: {message_text}")
 
+    if str(user.id) != settings.TELEGRAM_USER_ID:
+        await update.message.reply_text("Unauthorized")
+        return
+
     database = SqliteDB()
     bot_service = BotService(database)
 
-    telegram_user = TelegramUser(str(update.effective_user.id), update.effective_user.first_name)
+    user_id = str(update.effective_user.id)
+    if settings.INVESTPAL_USER_ID:
+        user_id = settings.INVESTPAL_USER_ID
+
+    telegram_user = TelegramUser(user_id, user.first_name)
 
     bot_response_msgs = await bot_service.generate_bot_response(
         telegram_user=telegram_user,

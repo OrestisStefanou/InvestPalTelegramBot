@@ -1,12 +1,15 @@
 # Telegram Investor Bot
 
-A Telegram bot that acts as a personal investor assistant, powered by an underlying AI agent service.
+A Telegram-based user interface for interacting with the [InvestPal](https://github.com/OrestisStefanou/InvestPal) backend — a personal AI-powered investment assistant.
 
 ## Features
 
 - **Personalized Investment Assistance**: Interacts with users to provide investment-related information and advice.
+- **Single-User Access Control**: Restricts the bot to a specific Telegram user ID — all other users receive an "Unauthorized" response.
 - **Session Management**: Maintains user context and sessions across interactions.
 - **AI Integration**: Leverages the [InvestPal Agent Service](https://github.com/OrestisStefanou/InvestPal) for generating intelligent responses.
+- **Trading Account Integration**: Optionally passes Alpaca and Coinbase API credentials to the agent service so the AI can access your brokerage accounts.
+- **Local User Persistence**: Stores user onboarding state in a local SQLite database for reliability across restarts.
 - **Message Formatting**: Automatically transforms AI-generated markdown into Telegram-compatible HTML.
 - **Asynchronous & Robust**: Built using `python-telegram-bot` with a focus on reliability and performance.
 
@@ -31,13 +34,39 @@ A Telegram bot that acts as a personal investor assistant, powered by an underly
     ```
 
 3.  **Configure environment variables**:
-    Create a `.env` file in the `telegram_bot` directory:
+    Create a `.env` file in the project directory:
+
+    **Required:**
     ```env
     TELEGRAM_BOT_TOKEN=your_telegram_bot_token
     TELEGRAM_WEBHOOK_URL=your_webhook_base_url
     TELEGRAM_WEBHOOK_PORT=8080
-    AGENT_SERVICE_URL=http://localhost:8000
+    TELEGRAM_USER_ID=your_telegram_user_id
+    INVESTPAL_BACKEND_URL=http://localhost:8000
     ```
+
+    **Optional:**
+    ```env
+    # Timeout for requests to the InvestPal agent service (default: 5 minutes)
+    INVESTPAL_BACKEND_TIMEOUT_MINUTES=5
+
+    # Use an existing InvestPal user ID instead of creating one based on your Telegram ID
+    INVESTPAL_USER_ID=
+
+    # Alpaca brokerage credentials — forwarded to the agent service for account access
+    ALPACA_API_KEY=
+    ALPACA_API_SECRET=
+
+    # Coinbase credentials — forwarded to the agent service for account access
+    COINBASE_API_KEY=
+    COINBASE_API_SECRET=
+
+    # SQLite database settings (default: telegram_bot_db.sqlite in the project directory)
+    SQLITE_DB_FILE_PATH=telegram_bot_db.sqlite
+    SQLITE_DB_TIMEOUT_SECONDS=10
+    ```
+
+    > **How to find your Telegram user ID**: Send a message to [@userinfobot](https://t.me/userinfobot) on Telegram.
 
 ## Running the Bot
 
@@ -58,6 +87,7 @@ This project is part of the **InvestPal** ecosystem. It serves as the frontend (
 - `main.py`: The entry point for the Telegram bot, handles commands and messages.
 - `bot_service.py`: Contains the core logic for interacting with the agent service and processing responses.
 - `agent_service_client.py`: An HTTP client for communicating with the AI agent service.
+- `database.py`: SQLite-backed persistence layer for storing user onboarding state.
 - `config.py`: Handles configuration management using Pydantic Settings.
 - `utils.py`: Utility functions for message splitting and formatting.
 - `logger.py`: Configures application logging.
