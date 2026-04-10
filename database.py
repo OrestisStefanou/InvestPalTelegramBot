@@ -1,3 +1,4 @@
+import os
 import sqlite3
 from abc import (
     ABC,
@@ -39,6 +40,20 @@ class SqliteDB(Database):
     def __init__(self):
         self.db_file_path = settings.SQLITE_DB_FILE_PATH
         self.timeout = settings.SQLITE_DB_TIMEOUT_SECONDS
+        if not os.path.exists(self.db_file_path):
+            self._initialize_db()
+
+    def _initialize_db(self):
+        schema_path = os.path.join(os.path.dirname(__file__), "db_schema.sql")
+        with open(schema_path, "r") as f:
+            schema = f.read()
+        conn = sqlite3.connect(self.db_file_path)
+        try:
+            conn.executescript(schema)
+            conn.commit()
+            logger.info(f"Database initialized from {schema_path}")
+        finally:
+            conn.close()
 
     @contextmanager
     def _get_connection(self):

@@ -127,6 +127,9 @@ class BotService():
             raise e
 
     def _create_agent_service_user_id(self, telegram_user_id: str) -> str:
+        if settings.INVESTPAL_USER_ID:
+            return settings.INVESTPAL_USER_ID
+
         return f"telegram:{telegram_user_id}"
 
     def _create_agent_service_session_id(self, telegram_user_id: str) -> str:
