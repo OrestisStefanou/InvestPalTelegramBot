@@ -13,7 +13,7 @@ from config import settings
 
 @dataclass
 class TelegramUser:
-    telegram_user_id: str
+    user_id: str
     first_name: str
 
 
@@ -39,7 +39,7 @@ class BotService():
         except Exception:
             return self._get_error_message_response()
 
-        session_id = self._create_agent_service_session_id(telegram_user.telegram_user_id)
+        session_id = self._create_agent_service_session_id(telegram_user.user_id)
 
         try:
             ai_response = await self.agent_service_client.generate_ai_response(
@@ -64,7 +64,7 @@ class BotService():
         return response_messages
 
     async def _check_and_handle_onboarding_error(self, telegram_user: TelegramUser):
-        db_user = self.database.get_user_by_telegram_user_id(telegram_user.telegram_user_id)
+        db_user = self.database.get_user_by_telegram_user_id(telegram_user.user_id)
         if not db_user:
             await self._onboard_user_on_agent_service(telegram_user)
             self._store_user_in_database(telegram_user, True)
@@ -74,12 +74,12 @@ class BotService():
             return None
 
         await self._onboard_user_on_agent_service(telegram_user)
-        self.database.set_onboarded_successfully(telegram_user.telegram_user_id, True)
+        self.database.set_onboarded_successfully(telegram_user.user_id, True)
         return None
 
     async def _onboard_user_on_agent_service(self, telegram_user: TelegramUser):
-        agent_service_user_id = self._create_agent_service_user_id(telegram_user.telegram_user_id)
-        session_id = self._create_agent_service_session_id(telegram_user.telegram_user_id)
+        agent_service_user_id = self._create_agent_service_user_id(telegram_user.user_id)
+        session_id = self._create_agent_service_session_id(telegram_user.user_id)
 
         try:
             await self.agent_service_client.create_user_context(
@@ -114,8 +114,8 @@ class BotService():
         try:
             self.database.add_new_user(
                 TelegramUserDbModel(
-                    telegram_user_id=telegram_user.telegram_user_id,
-                    agent_service_user_id=self._create_agent_service_user_id(telegram_user.telegram_user_id),
+                    telegram_user_id=telegram_user.user_id,
+                    agent_service_user_id=self._create_agent_service_user_id(telegram_user.user_id),
                     user_first_name=telegram_user.first_name,
                     onboarded_successfully=onboarded_successfully,
                     created_at=dt.datetime.now().isoformat(),
@@ -127,6 +127,9 @@ class BotService():
             raise e
 
     def _create_agent_service_user_id(self, telegram_user_id: str) -> str:
+        if settings.INVESTPAL_USER_ID:
+            return settings.INVESTPAL_USER_ID
+
         return f"telegram:{telegram_user_id}"
 
     def _create_agent_service_session_id(self, telegram_user_id: str) -> str:

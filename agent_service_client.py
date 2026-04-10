@@ -1,3 +1,4 @@
+import base64
 import http
 
 import httpx
@@ -9,7 +10,7 @@ class AgentServiceClient:
         pass
 
     async def create_user_context(self, user_id: str, user_profile: dict | None = None):
-        agent_service_url = settings.AGENT_SERVICE_URL
+        agent_service_url = settings.INVESTPAL_BACKEND_URL
         async with httpx.AsyncClient() as client:
             try:
                 response = await client.post(
@@ -29,7 +30,7 @@ class AgentServiceClient:
         return
 
     async def create_session(self, user_id: str, session_id: str):
-        agent_service_url = settings.AGENT_SERVICE_URL
+        agent_service_url = settings.INVESTPAL_BACKEND_URL
         async with httpx.AsyncClient() as client:
             try:
                 response = await client.post(
@@ -49,7 +50,7 @@ class AgentServiceClient:
         return
 
     async def generate_ai_response(self, session_id: str, message: str) -> str:
-        agent_service_url = settings.AGENT_SERVICE_URL
+        agent_service_url = settings.INVESTPAL_BACKEND_URL
         async with httpx.AsyncClient() as client:
             try:
                 response = await client.post(
@@ -58,7 +59,8 @@ class AgentServiceClient:
                         "session_id": session_id,
                         "message": message,
                     },
-                    timeout=settings.AGENT_SERVICE_TIMEOUT_MINUTES * 60,
+                    headers=self._set_up_headers(),
+                    timeout=settings.INVESTPAL_BACKEND_TIMEOUT_MINUTES * 60,
                 )
             except httpx.RequestError as e:
                 raise Exception(f"Failed to generate AI response: {e}")
@@ -72,3 +74,23 @@ class AgentServiceClient:
             raise Exception("Failed to extract AI response message")
 
         return ai_response_msg
+
+    def _set_up_headers(self) -> dict[str, any]:
+        alpaca_api_key = settings.ALPACA_API_KEY
+        alpaca_api_secret = settings.ALPACA_API_SECRET
+        coinbase_api_key = settings.COINBASE_API_KEY
+        coinbase_api_secret = settings.COINBASE_API_SECRET
+        encoded_coinbase_secret = base64.b64encode(
+            coinbase_api_secret.encode()
+        ).decode()
+        
+        headers = {}
+        if alpaca_api_key and alpaca_api_secret:
+            headers["X-Alpaca-Api-Key"] = alpaca_api_key
+            headers["X-Alpaca-Api-Secret"] = alpaca_api_secret   
+
+        if coinbase_api_key and coinbase_api_secret:
+            headers["X-Coinbase-Api-Key"] = coinbase_api_key
+            headers["X-Coinbase-Api-Secret"] = encoded_coinbase_secret
+
+        return headers
