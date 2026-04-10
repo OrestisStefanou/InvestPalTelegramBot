@@ -22,9 +22,6 @@ class Settings(BaseSettings):
     COINBASE_API_KEY: str | None = None
     COINBASE_API_SECRET: str | None = None
 
-    SQLITE_DB_FILE_PATH: str = "telegram_bot_db.sqlite"
-    SQLITE_DB_TIMEOUT_SECONDS: int = 10
-
     model_config = SettingsConfigDict(env_file=".env")
 
 settings = Settings()

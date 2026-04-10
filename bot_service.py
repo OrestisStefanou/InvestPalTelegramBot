@@ -1,11 +1,9 @@
-import datetime as dt
 from dataclasses import dataclass
 
 from telegram import Bot
 from telegram.error import TelegramError
 
 from agent_service_client import AgentServiceClient
-from database import Database, TelegramUserDbModel
 import utils
 from logger import logger
 from config import settings
@@ -18,22 +16,19 @@ class TelegramUser:
 
 
 class BotService():
-    def __init__(self, database: Database):
+    def __init__(self):
         self.agent_service_client = AgentServiceClient()
-        self.database = database
+        self._onboarded: bool = False
 
     async def handle_new_user(self, telegram_user: TelegramUser):
-        user_onboarded_successfully = True
         try:
             await self._onboard_user_on_agent_service(telegram_user)
+            self._onboarded = True
         except Exception:
-            user_onboarded_successfully = False
-
-        self._store_user_in_database(telegram_user, user_onboarded_successfully)
-
+            self._onboarded = False
 
     async def generate_bot_response(self, telegram_user: TelegramUser, message: str) -> list[str]:
-        # Check and handle any errors that may have happened in start command handler
+        # Retry onboarding if it previously failed
         try:
             await self._check_and_handle_onboarding_error(telegram_user)
         except Exception:
@@ -64,18 +59,11 @@ class BotService():
         return response_messages
 
     async def _check_and_handle_onboarding_error(self, telegram_user: TelegramUser):
-        db_user = self.database.get_user_by_telegram_user_id(telegram_user.user_id)
-        if not db_user:
-            await self._onboard_user_on_agent_service(telegram_user)
-            self._store_user_in_database(telegram_user, True)
-            return None
-
-        if db_user.onboarded_successfully:
-            return None
+        if self._onboarded:
+            return
 
         await self._onboard_user_on_agent_service(telegram_user)
-        self.database.set_onboarded_successfully(telegram_user.user_id, True)
-        return None
+        self._onboarded = True
 
     async def _onboard_user_on_agent_service(self, telegram_user: TelegramUser):
         agent_service_user_id = self._create_agent_service_user_id(telegram_user.user_id)
@@ -108,22 +96,6 @@ class BotService():
             logger.info(f"Message sent successfully to user {telegram_user_id}")
         except TelegramError as e:
             logger.error(f"Failed to send message to user {telegram_user_id}: {e}")
-            raise e
-
-    def _store_user_in_database(self, telegram_user: TelegramUser, onboarded_successfully: bool):
-        try:
-            self.database.add_new_user(
-                TelegramUserDbModel(
-                    telegram_user_id=telegram_user.user_id,
-                    agent_service_user_id=self._create_agent_service_user_id(telegram_user.user_id),
-                    user_first_name=telegram_user.first_name,
-                    onboarded_successfully=onboarded_successfully,
-                    created_at=dt.datetime.now().isoformat(),
-                    updated_at=dt.datetime.now().isoformat(),
-                )
-            )
-        except Exception as e:
-            logger.error(f"Failed to store user on database: {e}")
             raise e
 
     def _create_agent_service_user_id(self, telegram_user_id: str) -> str:

@@ -2,16 +2,15 @@ import time
 
 from telegram import Update
 from telegram.ext import (
-    Application, 
-    CommandHandler, 
-    MessageHandler, 
-    filters, 
+    Application,
+    CommandHandler,
+    MessageHandler,
+    filters,
     ContextTypes
 )
 
 from config import settings
 from bot_service import BotService, TelegramUser
-from database import SqliteDB
 from logger import logger
 from utils import get_instructions_message
 
@@ -26,8 +25,7 @@ async def handle_start_command(update: Update, context: ContextTypes.DEFAULT_TYP
     instructions_msg = get_instructions_message()
     await update.message.reply_text(instructions_msg, parse_mode="HTML")
 
-    database = SqliteDB()
-    bot_service = BotService(database)
+    bot_service: BotService = context.bot_data['bot_service']
 
     user_id = str(update.effective_user.id)
     if settings.INVESTPAL_USER_ID:
@@ -46,7 +44,7 @@ async def handle_start_command(update: Update, context: ContextTypes.DEFAULT_TYP
             telegram_user=telegram_user,
             message=f"Hey, this is our new communication channel through telegram!",
         )
-        
+
     for msg in bot_response_msgs:
         await update.message.reply_text(msg, parse_mode="HTML")
         time.sleep(1)
@@ -56,15 +54,13 @@ async def handle_incoming_message(update: Update, context: ContextTypes.DEFAULT_
     user = update.effective_user
     message_text = update.message.text
 
-    # Log the message and user info
     logger.info(f"User {user.id} (@{user.username}) sent: {message_text}")
 
     if str(user.id) != settings.TELEGRAM_USER_ID:
         await update.message.reply_text("Unauthorized")
         return
 
-    database = SqliteDB()
-    bot_service = BotService(database)
+    bot_service: BotService = context.bot_data['bot_service']
 
     user_id = str(update.effective_user.id)
     if settings.INVESTPAL_USER_ID:
@@ -88,11 +84,12 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def main():
     application = Application.builder().token(settings.TELEGRAM_BOT_TOKEN).build()
-    
+    application.bot_data['bot_service'] = BotService()
+
     application.add_handler(CommandHandler("start", handle_start_command))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_incoming_message))
     application.add_error_handler(error_handler)
-    
+
     logger.info("Bot is starting with webhook...")
     application.run_webhook(
         listen="0.0.0.0",
