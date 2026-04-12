@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from telegram import Bot
 from telegram.error import TelegramError
 
-from agent_service_client import AgentServiceClient
+from investpal_client import InvestPalClient
 import utils
 from logger import logger
 from config import settings
@@ -17,12 +17,12 @@ class TelegramUser:
 
 class BotService():
     def __init__(self):
-        self.agent_service_client = AgentServiceClient()
+        self.investpal_client = InvestPalClient()
         self._onboarded: bool = False
 
     async def handle_new_user(self, telegram_user: TelegramUser):
         try:
-            await self._onboard_user_on_agent_service(telegram_user)
+            await self._onboard_user_on_investpal(telegram_user)
             self._onboarded = True
         except Exception:
             self._onboarded = False
@@ -34,10 +34,10 @@ class BotService():
         except Exception:
             return self._get_error_message_response()
 
-        session_id = self._create_agent_service_session_id(telegram_user.user_id)
+        session_id = self._create_investpal_session_id(telegram_user.user_id)
 
         try:
-            ai_response = await self.agent_service_client.generate_ai_response(
+            ai_response = await self.investpal_client.generate_ai_response(
                 session_id=session_id,
                 message=message,
             )
@@ -62,16 +62,16 @@ class BotService():
         if self._onboarded:
             return
 
-        await self._onboard_user_on_agent_service(telegram_user)
+        await self._onboard_user_on_investpal(telegram_user)
         self._onboarded = True
 
-    async def _onboard_user_on_agent_service(self, telegram_user: TelegramUser):
-        agent_service_user_id = self._create_agent_service_user_id(telegram_user.user_id)
-        session_id = self._create_agent_service_session_id(telegram_user.user_id)
+    async def _onboard_user_on_investpal(self, telegram_user: TelegramUser):
+        investpal_user_id = self._create_investpal_user_id(telegram_user.user_id)
+        session_id = self._create_investpal_session_id(telegram_user.user_id)
 
         try:
-            await self.agent_service_client.create_user_context(
-                user_id=agent_service_user_id,
+            await self.investpal_client.create_user_context(
+                user_id=investpal_user_id,
                 user_profile={
                     "first_name": telegram_user.first_name,
                 }
@@ -81,8 +81,8 @@ class BotService():
             raise e
 
         try:
-            await self.agent_service_client.create_session(
-                user_id=agent_service_user_id,
+            await self.investpal_client.create_session(
+                user_id=investpal_user_id,
                 session_id=session_id,
             )
         except Exception as e:
@@ -92,19 +92,19 @@ class BotService():
     async def send_adhoc_message(self, telegram_user_id: str, message: str):
         try:
             bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
-            await bot.send_message(chat_id=telegram_user_id, text=message)
+            await bot.send_message(chat_id=telegram_user_id, text=message, parse_mode="HTML")
             logger.info(f"Message sent successfully to user {telegram_user_id}")
         except TelegramError as e:
             logger.error(f"Failed to send message to user {telegram_user_id}: {e}")
             raise e
 
-    def _create_agent_service_user_id(self, telegram_user_id: str) -> str:
+    def _create_investpal_user_id(self, telegram_user_id: str) -> str:
         if settings.INVESTPAL_USER_ID:
             return settings.INVESTPAL_USER_ID
 
         return f"telegram:{telegram_user_id}"
 
-    def _create_agent_service_session_id(self, telegram_user_id: str) -> str:
+    def _create_investpal_session_id(self, telegram_user_id: str) -> str:
         return f"telegram_session:{telegram_user_id}"
 
     def _get_error_message_response(self) -> list[str]:
