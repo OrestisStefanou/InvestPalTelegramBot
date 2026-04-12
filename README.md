@@ -10,6 +10,7 @@ A Telegram-based user interface for interacting with the [InvestPal](https://git
 - **AI Integration**: Leverages the [InvestPal Agent Service](https://github.com/OrestisStefanou/InvestPal) for generating intelligent responses.
 - **Trading Account Integration**: Optionally passes Alpaca and Coinbase API credentials to the agent service so the AI can access your brokerage accounts.
 - **Message Formatting**: Automatically transforms AI-generated markdown into Telegram-compatible HTML.
+- **Agent Reminders**: A standalone workflow (`workflows/agent_reminders.py`) that can be run on a schedule to check for pending AI reminders and deliver them to the user.
 - **Asynchronous & Robust**: Built using `python-telegram-bot` with a focus on reliability and performance.
 
 ## Prerequisites
@@ -79,12 +80,13 @@ This project is part of the **InvestPal** ecosystem. It serves as the frontend (
 
 ## Project Structure
 
-- `main.py`: The entry point for the Telegram bot, handles commands and messages.
-- `bot_service.py`: Contains the core logic for interacting with the agent service and processing responses.
-- `agent_service_client.py`: An HTTP client for communicating with the AI agent service.
-- `config.py`: Handles configuration management using Pydantic Settings.
-- `utils.py`: Utility functions for message splitting and formatting.
-- `logger.py`: Configures application logging.
+- `main.py`: Entry point for the Telegram bot — registers handlers and runs the webhook server.
+- `bot_service.py`: Core business logic — onboarding, response generation, and the reminders workflow.
+- `investpal_client.py`: HTTP client for communicating with the InvestPal agent service.
+- `config.py`: Configuration management using Pydantic Settings.
+- `utils.py`: Utility functions for message splitting and markdown-to-HTML formatting.
+- `logger.py`: Application logging setup.
+- `workflows/agent_reminders.py`: Standalone script that checks for pending AI reminders and sends them to the user. Intended to be run on a schedule (e.g., via cron).
 
 ## Development
 

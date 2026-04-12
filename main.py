@@ -15,6 +15,13 @@ from logger import logger
 from utils import get_instructions_message
 
 
+def _make_telegram_user(update: Update) -> TelegramUser:
+    return TelegramUser(
+        telegram_id=str(update.effective_user.id),
+        first_name=update.effective_user.first_name,
+    )
+
+
 async def handle_start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.info(f"User {update.effective_user.id} ({update.effective_user.username}) sent /start")
 
@@ -26,12 +33,7 @@ async def handle_start_command(update: Update, context: ContextTypes.DEFAULT_TYP
     await update.message.reply_text(instructions_msg, parse_mode="HTML")
 
     bot_service: BotService = context.bot_data['bot_service']
-
-    user_id = str(update.effective_user.id)
-    if settings.INVESTPAL_USER_ID:
-        user_id = settings.INVESTPAL_USER_ID
-
-    telegram_user = TelegramUser(user_id, update.effective_user.first_name)
+    telegram_user = _make_telegram_user(update)
     await bot_service.handle_new_user(telegram_user)
 
     if not settings.INVESTPAL_USER_ID:
@@ -61,12 +63,7 @@ async def handle_incoming_message(update: Update, context: ContextTypes.DEFAULT_
         return
 
     bot_service: BotService = context.bot_data['bot_service']
-
-    user_id = str(update.effective_user.id)
-    if settings.INVESTPAL_USER_ID:
-        user_id = settings.INVESTPAL_USER_ID
-
-    telegram_user = TelegramUser(user_id, user.first_name)
+    telegram_user = _make_telegram_user(update)
 
     bot_response_msgs = await bot_service.generate_bot_response(
         telegram_user=telegram_user,
