@@ -5,7 +5,8 @@ import httpx
 
 from config import settings
 
-class AgentServiceClient:
+
+class InvestPalClient:
     def __init__(self):
         pass
 
@@ -74,6 +75,22 @@ class AgentServiceClient:
             raise Exception("Failed to extract AI response message")
 
         return ai_response_msg
+
+    async def get_agent_reminders(self, user_id: str) -> list[dict]:
+        agent_service_url = settings.INVESTPAL_BACKEND_URL
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.get(
+                    f"{agent_service_url}/agent_reminders/{user_id}",
+                    timeout=settings.INVESTPAL_BACKEND_TIMEOUT_MINUTES * 60,
+                )
+            except httpx.RequestError as e:
+                raise Exception(f"Failed to get agent reminders: {e}")
+
+        if response.status_code != http.HTTPStatus.OK:
+            raise Exception(f"Failed to get agent reminders with status code: {response.status_code} and text: {response.text}")
+        
+        return response.json()
 
     def _set_up_headers(self) -> dict[str, any]:
         alpaca_api_key = settings.ALPACA_API_KEY
