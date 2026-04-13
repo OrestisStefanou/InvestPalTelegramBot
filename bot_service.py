@@ -11,7 +11,7 @@ from config import settings
 
 @dataclass
 class TelegramUser:
-    user_id: str
+    telegram_id: str
     first_name: str
 
 
@@ -34,7 +34,7 @@ class BotService():
         except Exception:
             return self._get_error_message_response()
 
-        session_id = self._create_investpal_session_id(telegram_user.user_id)
+        session_id = self._create_investpal_session_id()
 
         try:
             ai_response = await self.investpal_client.generate_ai_response(
@@ -58,6 +58,22 @@ class BotService():
 
         return response_messages
 
+    async def send_reminders_if_due(self):
+        reminders = await self.investpal_client.get_agent_reminders(self._create_investpal_user_id())
+        if len(reminders) == 0:
+            return
+
+        telegram_user = TelegramUser(telegram_id=settings.TELEGRAM_USER_ID, first_name="")
+        response_chunks = await self.generate_bot_response(
+            telegram_user=telegram_user,
+            message="Hello, please give me an update on my reminders",
+        )
+        for chunk in response_chunks:
+            await self.send_adhoc_message(
+                telegram_user_id=settings.TELEGRAM_USER_ID,
+                message=chunk,
+            )
+
     async def _check_and_handle_onboarding_error(self, telegram_user: TelegramUser):
         if self._onboarded:
             return
@@ -66,8 +82,8 @@ class BotService():
         self._onboarded = True
 
     async def _onboard_user_on_investpal(self, telegram_user: TelegramUser):
-        investpal_user_id = self._create_investpal_user_id(telegram_user.user_id)
-        session_id = self._create_investpal_session_id(telegram_user.user_id)
+        investpal_user_id = self._create_investpal_user_id()
+        session_id = self._create_investpal_session_id()
 
         try:
             await self.investpal_client.create_user_context(
@@ -98,14 +114,14 @@ class BotService():
             logger.error(f"Failed to send message to user {telegram_user_id}: {e}")
             raise e
 
-    def _create_investpal_user_id(self, telegram_user_id: str) -> str:
+    def _create_investpal_user_id(self) -> str:
         if settings.INVESTPAL_USER_ID:
             return settings.INVESTPAL_USER_ID
 
-        return f"telegram:{telegram_user_id}"
+        return f"telegram:{settings.TELEGRAM_USER_ID}"
 
-    def _create_investpal_session_id(self, telegram_user_id: str) -> str:
-        return f"telegram_session:{telegram_user_id}"
+    def _create_investpal_session_id(self) -> str:
+        return f"telegram_session:{settings.TELEGRAM_USER_ID}"
 
     def _get_error_message_response(self) -> list[str]:
         return ["I am sorry, something went wrong. Please try again later."]
